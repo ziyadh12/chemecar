@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chem-E-Car Distance Calculator</title>
+  <style>
+    :root {
+      --bg: #f6f7f2;
+      --panel: #ffffff;
+      --ink: #1f2623;
+      --muted: #64706b;
+      --line: #d9ded8;
+      --accent: #18756d;
+      --accent-strong: #0e514b;
+      --warm: #c95d2e;
+      --track: #dde6e2;
+      --shadow: 0 18px 50px rgba(24, 38, 34, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        linear-gradient(135deg, rgba(24, 117, 109, 0.12), transparent 34%),
+        linear-gradient(315deg, rgba(201, 93, 46, 0.10), transparent 30%),
+        var(--bg);
+      color: var(--ink);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    main {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 30px 0;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 340px;
+      gap: 22px;
+      align-items: start;
+    }
+
+    .workspace,
+    .results,
+    .advanced-panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .workspace {
+      overflow: hidden;
+    }
+
+    header {
+      padding: 24px 24px 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.8rem, 3vw, 3rem);
+      line-height: 1.02;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 0.98rem;
+      line-height: 1.45;
+      max-width: 62ch;
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      border-bottom: 1px solid var(--line);
+      background: #eef3f0;
+    }
+
+    .tab {
+      min-height: 48px;
+      border: 0;
+      border-right: 1px solid var(--line);
+      background: transparent;
+      color: var(--muted);
+      font: 700 0.9rem/1.1 Arial, Helvetica, sans-serif;
+      cursor: pointer;
+    }
+
+    .tab:last-child {
+      border-right: 0;
+    }
+
+    .tab.active {
+      background: var(--panel);
+      color: var(--accent-strong);
+      box-shadow: inset 0 3px 0 var(--accent);
+    }
+
+    .tab-panel {
+      display: none;
+      padding: 22px 24px 10px;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    .control-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .control {
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfcfa;
+    }
+
+    .control-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: baseline;
+      margin-bottom: 12px;
+    }
+
+    label {
+      font-weight: 700;
+      color: var(--ink);
+      overflow-wrap: anywhere;
+    }
+
+    output {
+      min-width: 76px;
+      color: var(--accent-strong);
+      font-weight: 700;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
+    .bounds {
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 0.78rem;
+      margin-top: 6px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .advanced-panel {
+      margin: 0 24px 24px;
+      box-shadow: none;
+    }
+
+    details {
+      padding: 0;
+    }
+
+    summary {
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 16px;
+      color: var(--accent-strong);
+      font-weight: 800;
+      cursor: pointer;
+      list-style: none;
+    }
+
+    summary::-webkit-details-marker {
+      display: none;
+    }
+
+    summary::before {
+      content: "+";
+      display: grid;
+      place-items: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: white;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    details[open] summary::before {
+      content: "-";
+    }
+
+    .advanced-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      padding: 0 16px 16px;
+    }
+
+    .results {
+      position: sticky;
+      top: 18px;
+      padding: 22px;
+    }
+
+    .distance-label {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.86rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .distance {
+      margin: 8px 0 20px;
+      font-size: clamp(2.4rem, 6vw, 4.6rem);
+      line-height: 0.95;
+      color: var(--accent-strong);
+      font-weight: 900;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .metrics {
+      display: grid;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .track {
+      position: relative;
+      height: 48px;
+      margin: 10px 0 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background:
+        repeating-linear-gradient(90deg, transparent 0 42px, rgba(31, 38, 35, 0.10) 42px 44px),
+        linear-gradient(180deg, #f9fbfa, #e6ece9);
+      overflow: hidden;
+    }
+
+    .track-fill {
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 0%;
+      background: linear-gradient(90deg, rgba(24, 117, 109, 0.18), rgba(201, 93, 46, 0.28));
+      transition: width 160ms ease;
+    }
+
+    .car-dot {
+      position: absolute;
+      top: 50%;
+      left: 0%;
+      width: 24px;
+      height: 24px;
+      border: 4px solid var(--accent-strong);
+      border-radius: 50%;
+      background: var(--warm);
+      transform: translate(-50%, -50%);
+      transition: left 160ms ease;
+      box-shadow: 0 6px 12px rgba(31, 38, 35, 0.18);
+    }
+
+    .metric {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 0;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 0.94rem;
+    }
+
+    .metric strong {
+      color: var(--ink);
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+    }
+
+    .reset {
+      width: 100%;
+      min-height: 44px;
+      margin-top: 18px;
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      background: var(--accent);
+      color: white;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .reset:hover,
+    .tab:hover {
+      filter: brightness(0.96);
+    }
+
+    @media (max-width: 860px) {
+      main {
+        width: min(100% - 20px, 680px);
+        padding: 10px 0;
+      }
+
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .results {
+        position: static;
+        order: -1;
+      }
+    }
+
+    @media (max-width: 620px) {
+      header,
+      .tab-panel {
+        padding-left: 16px;
+        padding-right: 16px;
+      }
+
+      .tabs,
+      .control-grid,
+      .advanced-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .tab {
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .advanced-panel {
+        margin-left: 16px;
+        margin-right: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="app">
+      <section class="workspace" aria-label="Chem-E-Car model inputs">
+        <header>
+          <h1>Chem-E-Car Distance Calculator</h1>
+          <p class="subtitle">Distance updates from the corrected clock reaction, motor torque, friction torque, and wheel integration model in <strong>chemecar.py</strong>.</p>
+        </header>
+
+        <nav class="tabs" aria-label="Parameter groups">
+          <button class="tab active" type="button" data-tab="motor">Motor</button>
+          <button class="tab" type="button" data-tab="cart">Cart</button>
+          <button class="tab" type="button" data-tab="chemical">Chemical Clock</button>
+        </nav>
+
+        <section class="tab-panel active" id="motor" aria-label="Motor parameters">
+          <div class="control-grid">
+            <div class="control" data-control="voltage"></div>
+            <div class="control" data-control="resistance"></div>
+            <div class="control" data-control="torque_constant"></div>
+            <div class="control" data-control="w_max"></div>
+          </div>
+        </section>
+
+        <section class="tab-panel" id="cart" aria-label="Cart parameters">
+          <div class="control-grid">
+            <div class="control" data-control="mass"></div>
+            <div class="control" data-control="radius"></div>
+          </div>
+        </section>
+
+        <section class="tab-panel" id="chemical" aria-label="Chemical clock parameters">
+          <div class="control-grid">
+            <div class="control" data-control="thiosulfate"></div>
+            <div class="control" data-control="hydrogen_peroxide"></div>
+            <div class="control" data-control="iodine"></div>
+          </div>
+        </section>
+
+        <div class="advanced-panel">
+          <details>
+            <summary>Advanced Settings</summary>
+            <div class="advanced-grid">
+              <div class="control" data-control="k"></div>
+              <div class="control" data-control="bearing_friction"></div>
+              <div class="control" data-control="rolling_friction"></div>
+              <div class="control" data-control="g"></div>
+            </div>
+          </details>
+        </div>
+      </section>
+
+      <aside class="results" aria-label="Calculated output">
+        <p class="distance-label">Distance</p>
+        <div class="distance"><span id="distance">0.000</span> m</div>
+        <div class="track" aria-hidden="true">
+          <div class="track-fill" id="track-fill"></div>
+          <div class="car-dot" id="car-dot"></div>
+        </div>
+        <div class="metrics">
+          <div class="metric">
+            <span>Clock time</span>
+            <strong id="clock-time">0.000 s</strong>
+          </div>
+          <div class="metric">
+            <span>Stall torque</span>
+            <strong id="stall-torque">0.000 N m</strong>
+          </div>
+          <div class="metric">
+            <span>Friction torque</span>
+            <strong id="friction-torque">0.000 N m</strong>
+          </div>
+          <div class="metric">
+            <span>Final angular velocity</span>
+            <strong id="angular-velocity">0.000 rad/s</strong>
+          </div>
+        </div>
+        <button class="reset" type="button" id="reset">Reset Defaults</button>
+      </aside>
+    </div>
+  </main>
+
+  <script>
+    const parameterDefs = {
+      voltage: { label: "voltage", value: 1.5, min: 0.1, max: 12, step: 0.1, unit: "V" },
+      resistance: { label: "resistance", value: 0.0625, min: 0.01, max: 1, step: 0.0025, unit: "ohm" },
+      torque_constant: { label: "torque_constant", value: 0.0025, min: 0.0001, max: 0.02, step: 0.0001, unit: "N m/A" },
+      w_max: { label: "w_max", value: 100, min: 10, max: 500, step: 1, unit: "rad/s" },
+      mass: { label: "mass", value: 0.05, min: 0.005, max: 0.5, step: 0.005, unit: "kg" },
+      radius: { label: "radius", value: 0.025, min: 0.005, max: 0.15, step: 0.001, unit: "m" },
+      thiosulfate: { label: "thiosulfate", value: 1, min: 0.1, max: 10, step: 0.1, unit: "" },
+      hydrogen_peroxide: { label: "hydrogen peroxide", value: 4, min: 0.1, max: 10, step: 0.1, unit: "" },
+      iodine: { label: "iodine", value: 1, min: 0.1, max: 10, step: 0.1, unit: "" },
+      k: { label: "k", value: 0.05, min: 0, max: 1, step: 0.01, unit: "" },
+      bearing_friction: { label: "bearing_friction", value: 0.15, min: 0, max: 1, step: 0.01, unit: "" },
+      rolling_friction: { label: "rolling_friction", value: 0.05, min: 0, max: 1, step: 0.01, unit: "" },
+      g: { label: "g", value: 9.8, min: 1, max: 20, step: 0.1, unit: "m/s^2" }
+    };
+
+    const values = {};
+    const controls = {};
+
+    function formatValue(value, unit = "") {
+      const abs = Math.abs(value);
+      let shown;
+
+      if (abs !== 0 && abs < 0.01) {
+        shown = value.toFixed(4);
+      } else if (abs < 10) {
+        shown = value.toFixed(3).replace(/0+$/, "").replace(/\.$/, "");
+      } else {
+        shown = value.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
+      }
+
+      return unit ? `${shown} ${unit}` : shown;
+    }
+
+    function renderControl(name, mount) {
+      const def = parameterDefs[name];
+      values[name] = def.value;
+
+      mount.innerHTML = `
+        <div class="control-top">
+          <label for="${name}">${def.label}</label>
+          <output id="${name}-value" for="${name}">${formatValue(def.value, def.unit)}</output>
+        </div>
+        <input
+          type="range"
+          id="${name}"
+          min="${def.min}"
+          max="${def.max}"
+          step="${def.step}"
+          value="${def.value}"
+        >
+        <div class="bounds">
+          <span>${formatValue(def.min, def.unit)}</span>
+          <span>${formatValue(def.max, def.unit)}</span>
+        </div>
+      `;
+
+      const input = mount.querySelector("input");
+      const output = mount.querySelector("output");
+      controls[name] = { input, output };
+
+      input.addEventListener("input", () => {
+        values[name] = Number(input.value);
+        output.textContent = formatValue(values[name], def.unit);
+        updateResults();
+      });
+    }
+
+    function timeStop(reactant1, reactant2, reactant3) {
+      return reactant1 / (0.024 * reactant2 * reactant3);
+    }
+
+    function stallTorqueCalc(v, r, tc) {
+      return tc * (v / r);
+    }
+
+    function frictionTorqueCalc(mass, radius, bearing, rolling, bearingScale, gravity) {
+      const normalForce = mass * gravity;
+      return (rolling + bearing * bearingScale) * normalForce * radius;
+    }
+
+    function motorTorqueCalc(stallTorque, angularVelocity, maxAngularVelocity) {
+      if (maxAngularVelocity <= 0) {
+        return 0;
+      }
+
+      const speedFraction = angularVelocity / maxAngularVelocity;
+      return stallTorque * Math.max(0, 1 - speedFraction);
+    }
+
+    function calculateDistance(params) {
+      const stopTime = timeStop(params.thiosulfate, params.hydrogen_peroxide, params.iodine);
+      const stallTorque = stallTorqueCalc(params.voltage, params.resistance, params.torque_constant);
+      const frictionTorque = frictionTorqueCalc(
+        params.mass,
+        params.radius,
+        params.bearing_friction,
+        params.rolling_friction,
+        params.k,
+        params.g
+      );
+
+      let time = 0;
+      let angularVelocity = 0;
+      let position = 0;
+      const dt = 30 / 10000;
+      const momentOfInertia = params.mass * Math.pow(params.radius, 2);
+
+      for (let n = 0; n < 10000; n += 1) {
+        time = n * dt;
+        const powered = time < stopTime;
+        const driveTorque = powered
+          ? motorTorqueCalc(stallTorque, angularVelocity, params.w_max)
+          : 0;
+
+        let netTorque;
+        if (angularVelocity <= 0 && driveTorque <= frictionTorque) {
+          angularVelocity = 0;
+          if (!powered) {
+            break;
+          }
+          netTorque = Math.max(0, driveTorque - frictionTorque);
+        } else {
+          netTorque = driveTorque - frictionTorque;
+        }
+
+        const angularAcceleration = netTorque / momentOfInertia;
+        angularVelocity = Math.max(0, angularVelocity + angularAcceleration * dt);
+        const linearVelocity = angularVelocity * params.radius;
+        position += linearVelocity * dt;
+      }
+
+      return {
+        position,
+        stopTime,
+        stallTorque,
+        frictionTorque,
+        angularVelocity
+      };
+    }
+
+    function updateResults() {
+      const result = calculateDistance(values);
+      document.getElementById("distance").textContent = result.position.toFixed(3);
+      document.getElementById("clock-time").textContent = `${result.stopTime.toFixed(3)} s`;
+      document.getElementById("stall-torque").textContent = `${result.stallTorque.toFixed(5)} N m`;
+      document.getElementById("friction-torque").textContent = `${result.frictionTorque.toFixed(5)} N m`;
+      document.getElementById("angular-velocity").textContent = `${result.angularVelocity.toFixed(3)} rad/s`;
+
+      const trackPercent = Math.max(0, Math.min(100, (result.position / 30) * 100));
+      document.getElementById("track-fill").style.width = `${trackPercent}%`;
+      document.getElementById("car-dot").style.left = `${trackPercent}%`;
+    }
+
+    document.querySelectorAll("[data-control]").forEach((mount) => {
+      renderControl(mount.dataset.control, mount);
+    });
+
+    document.querySelectorAll(".tab").forEach((tab) => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach((button) => {
+          button.classList.toggle("active", button === tab);
+        });
+        document.querySelectorAll(".tab-panel").forEach((panel) => {
+          panel.classList.toggle("active", panel.id === tab.dataset.tab);
+        });
+      });
+    });
+
+    document.getElementById("reset").addEventListener("click", () => {
+      Object.entries(parameterDefs).forEach(([name, def]) => {
+        values[name] = def.value;
+        controls[name].input.value = def.value;
+        controls[name].output.textContent = formatValue(def.value, def.unit);
+      });
+      updateResults();
+    });
+
+    updateResults();
+  </script>
+</body>
+</html>
