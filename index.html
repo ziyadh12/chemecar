@@ -358,7 +358,7 @@
       <section class="workspace" aria-label="Chem-E-Car model inputs">
         <header>
           <h1>Chem-E-Car Distance Calculator</h1>
-          <p class="subtitle">Distance updates from the corrected clock reaction, motor torque, friction torque, and wheel integration model in <strong>chemecar.py</strong>.</p>
+          <p class="subtitle">Distance updates from the same clock reaction, motor torque, drag torque, and wheel integration used in <strong>chemecar.py</strong>.</p>
         </header>
 
         <nav class="tabs" aria-label="Parameter groups">
@@ -379,6 +379,8 @@
         <section class="tab-panel" id="cart" aria-label="Cart parameters">
           <div class="control-grid">
             <div class="control" data-control="mass"></div>
+            <div class="control" data-control="wheel_mass"></div>
+            <div class="control" data-control="number_wheels"></div>
             <div class="control" data-control="radius"></div>
           </div>
         </section>
@@ -395,7 +397,6 @@
           <details>
             <summary>Advanced Settings</summary>
             <div class="advanced-grid">
-              <div class="control" data-control="k"></div>
               <div class="control" data-control="bearing_friction"></div>
               <div class="control" data-control="rolling_friction"></div>
               <div class="control" data-control="g"></div>
@@ -417,12 +418,8 @@
             <strong id="clock-time">0.000 s</strong>
           </div>
           <div class="metric">
-            <span>Stall torque</span>
+            <span>Effective stall torque</span>
             <strong id="stall-torque">0.000 N m</strong>
-          </div>
-          <div class="metric">
-            <span>Friction torque</span>
-            <strong id="friction-torque">0.000 N m</strong>
           </div>
           <div class="metric">
             <span>Final angular velocity</span>
@@ -439,16 +436,22 @@
       voltage: { label: "voltage", value: 1.5, min: 0.1, max: 12, step: 0.1, unit: "V" },
       resistance: { label: "resistance", value: 0.0625, min: 0.01, max: 1, step: 0.0025, unit: "ohm" },
       torque_constant: { label: "torque_constant", value: 0.0025, min: 0.0001, max: 0.02, step: 0.0001, unit: "N m/A" },
-      w_max: { label: "w_max", value: 100, min: 10, max: 500, step: 1, unit: "rad/s" },
-      mass: { label: "mass", value: 0.05, min: 0.005, max: 0.5, step: 0.005, unit: "kg" },
+      w_max: { label: "w_max", value: 500, min: 10, max: 500, step: 1, unit: "rad/s" },
+      mass: { label: "mass", value: 2.5, min: 0.1, max: 10, step: 0.1, unit: "kg" },
+      wheel_mass: { label: "wheel_mass", value: 0.05, min: 0.005, max: 0.5, step: 0.005, unit: "kg" },
+      number_wheels: { label: "number_wheels", value: 4, min: 1, max: 8, step: 1, unit: "" },
       radius: { label: "radius", value: 0.025, min: 0.005, max: 0.15, step: 0.001, unit: "m" },
       thiosulfate: { label: "thiosulfate", value: 1, min: 0.1, max: 10, step: 0.1, unit: "" },
       hydrogen_peroxide: { label: "hydrogen peroxide", value: 4, min: 0.1, max: 10, step: 0.1, unit: "" },
       iodine: { label: "iodine", value: 1, min: 0.1, max: 10, step: 0.1, unit: "" },
-      k: { label: "k", value: 0.05, min: 0, max: 1, step: 0.01, unit: "" },
       bearing_friction: { label: "bearing_friction", value: 0.15, min: 0, max: 1, step: 0.01, unit: "" },
       rolling_friction: { label: "rolling_friction", value: 0.05, min: 0, max: 1, step: 0.01, unit: "" },
       g: { label: "g", value: 9.8, min: 1, max: 20, step: 0.1, unit: "m/s^2" }
+    };
+
+    const modelConstants = {
+      k: 0.05,
+      motorEfficiency: 0.95
     };
 
     const values = {};
@@ -511,56 +514,45 @@
       return tc * (v / r);
     }
 
-    function frictionTorqueCalc(mass, radius, bearing, rolling, bearingScale, gravity) {
-      const normalForce = mass * gravity;
-      return (rolling + bearing * bearingScale) * normalForce * radius;
-    }
-
-    function motorTorqueCalc(stallTorque, angularVelocity, maxAngularVelocity) {
-      if (maxAngularVelocity <= 0) {
-        return 0;
-      }
-
-      const speedFraction = angularVelocity / maxAngularVelocity;
-      return stallTorque * Math.max(0, 1 - speedFraction);
-    }
-
     function calculateDistance(params) {
       const stopTime = timeStop(params.thiosulfate, params.hydrogen_peroxide, params.iodine);
       const stallTorque = stallTorqueCalc(params.voltage, params.resistance, params.torque_constant);
-      const frictionTorque = frictionTorqueCalc(
+      const effectiveStallTorque = stallTorque
+        * modelConstants.motorEfficiency
+        / params.number_wheels;
+      const mechanics = [
         params.mass,
         params.radius,
         params.bearing_friction,
         params.rolling_friction,
-        params.k,
+        modelConstants.k,
+        params.w_max,
         params.g
-      );
+      ];
 
       let time = 0;
       let angularVelocity = 0;
       let position = 0;
       const dt = 30 / 10000;
-      const momentOfInertia = params.mass * Math.pow(params.radius, 2);
 
       for (let n = 0; n < 10000; n += 1) {
-        time = n * dt;
-        const powered = time < stopTime;
-        const driveTorque = powered
-          ? motorTorqueCalc(stallTorque, angularVelocity, params.w_max)
-          : 0;
-
+        const friction = (mechanics[0] / params.number_wheels) * mechanics[1] * mechanics[6];
+        const momentOfInertia = params.wheel_mass * Math.pow(params.radius, 2);
         let netTorque;
-        if (angularVelocity <= 0 && driveTorque <= frictionTorque) {
-          angularVelocity = 0;
-          if (!powered) {
-            break;
-          }
-          netTorque = Math.max(0, driveTorque - frictionTorque);
+
+        if (time < stopTime) {
+          netTorque = effectiveStallTorque
+            - mechanics[2] * mechanics[4] * friction
+            - mechanics[3] * friction
+            - (effectiveStallTorque * angularVelocity) / mechanics[5];
+        } else if (time >= stopTime && angularVelocity > 0) {
+          netTorque = -mechanics[2] * mechanics[4] * friction
+            - mechanics[3] * friction;
         } else {
-          netTorque = driveTorque - frictionTorque;
+          netTorque = 0;
         }
 
+        time += 0.01;
         const angularAcceleration = netTorque / momentOfInertia;
         angularVelocity = Math.max(0, angularVelocity + angularAcceleration * dt);
         const linearVelocity = angularVelocity * params.radius;
@@ -570,8 +562,7 @@
       return {
         position,
         stopTime,
-        stallTorque,
-        frictionTorque,
+        stallTorque: effectiveStallTorque,
         angularVelocity
       };
     }
@@ -581,7 +572,6 @@
       document.getElementById("distance").textContent = result.position.toFixed(3);
       document.getElementById("clock-time").textContent = `${result.stopTime.toFixed(3)} s`;
       document.getElementById("stall-torque").textContent = `${result.stallTorque.toFixed(5)} N m`;
-      document.getElementById("friction-torque").textContent = `${result.frictionTorque.toFixed(5)} N m`;
       document.getElementById("angular-velocity").textContent = `${result.angularVelocity.toFixed(3)} rad/s`;
 
       const trackPercent = Math.max(0, Math.min(100, (result.position / 30) * 100));
