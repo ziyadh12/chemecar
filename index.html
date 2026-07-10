@@ -85,6 +85,11 @@
       background: #eef3f0;
     }
 
+    .mode-tabs {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      border-top: 1px solid var(--line);
+    }
+
     .tab {
       min-height: 48px;
       border: 0;
@@ -118,6 +123,10 @@
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 18px;
+    }
+
+    #chemical-controls {
+      margin-top: 18px;
     }
 
     .control {
@@ -154,6 +163,17 @@
       accent-color: var(--accent);
     }
 
+    select {
+      width: 100%;
+      min-height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: white;
+      color: var(--ink);
+      font: 700 0.92rem/1 Arial, Helvetica, sans-serif;
+      padding: 0 10px;
+    }
+
     .bounds {
       display: flex;
       justify-content: space-between;
@@ -164,7 +184,7 @@
     }
 
     .advanced-panel {
-      margin: 0 24px 24px;
+      margin: 18px 0 0;
       box-shadow: none;
     }
 
@@ -384,17 +404,31 @@
           <p class="subtitle">Calculate distance using set design parameters.</p>
         </header>
 
-        <nav class="tabs" aria-label="Parameter groups">
-          <button class="tab active" type="button" data-tab="motor">Motor</button>
+        <nav class="tabs mode-tabs" aria-label="Reaction type">
+          <button class="tab active" type="button" data-mode="battery">Battery Reaction</button>
+          <button class="tab" type="button" data-mode="pressure">Pressure Reaction</button>
+        </nav>
+
+        <nav class="tabs" id="parameter-tabs" aria-label="Parameter groups">
+          <button class="tab active" type="button" data-tab="motor" data-modes="battery">Motor</button>
           <button class="tab" type="button" data-tab="cart">Cart</button>
-          <button class="tab" type="button" data-tab="chemical">Chemical Clock</button>
+          <button class="tab" type="button" data-tab="chemical" data-modes="battery">Chemical Clock</button>
+          <button class="tab" type="button" data-tab="pressure" data-modes="pressure" hidden>Pressure Reaction</button>
         </nav>
 
         <section class="tab-panel active" id="motor" aria-label="Motor parameters">
           <div class="control-grid">
             <div class="control" data-control="voltage"></div>
-            <div class="control" data-control="torque_constant"></div>
-            <div class="control" data-control="w_max"></div>
+          </div>
+          <div class="advanced-panel">
+            <details>
+              <summary>Advanced Settings</summary>
+              <div class="advanced-grid">
+                <div class="control" data-control="torque_constant"></div>
+                <div class="control" data-control="w_max"></div>
+                <div class="control" data-control="resistance"></div>
+              </div>
+            </details>
           </div>
         </section>
 
@@ -405,27 +439,52 @@
             <div class="control" data-control="number_wheels"></div>
             <div class="control" data-control="radius"></div>
           </div>
+          <div class="advanced-panel">
+            <details>
+              <summary>Advanced Settings</summary>
+              <div class="advanced-grid">
+                <div class="control" data-control="bearing_friction"></div>
+                <div class="control" data-control="rolling_friction"></div>
+                <div class="control" data-control="g"></div>
+              </div>
+            </details>
+          </div>
         </section>
 
         <section class="tab-panel" id="chemical" aria-label="Chemical clock parameters">
           <div class="control-grid">
-            <div class="control" data-control="thiosulfate"></div>
-            <div class="control" data-control="hydrogen_peroxide"></div>
-            <div class="control" data-control="iodine"></div>
+            <div class="control">
+              <div class="control-top">
+                <label for="reaction-select">Chemical Reaction</label>
+              </div>
+              <select id="reaction-select"></select>
+            </div>
           </div>
+          <div class="control-grid" id="chemical-controls"></div>
         </section>
 
-        <div class="advanced-panel">
-          <details>
-            <summary>Advanced Settings</summary>
-            <div class="advanced-grid">
-              <div class="control" data-control="resistance"></div>
-              <div class="control" data-control="bearing_friction"></div>
-              <div class="control" data-control="rolling_friction"></div>
-              <div class="control" data-control="g"></div>
+        <section class="tab-panel" id="pressure" aria-label="Pressure reaction parameters">
+          <div class="control-grid">
+            <div class="control">
+              <div class="control-top">
+                <label for="pressure-reaction-select">Pressure Reaction</label>
+              </div>
+              <select id="pressure-reaction-select"></select>
             </div>
-          </details>
-        </div>
+            <div class="control" data-control="reaction_time"></div>
+          </div>
+          <div class="control-grid" id="pressure-controls"></div>
+          <div class="advanced-panel">
+            <details>
+              <summary>Advanced Settings</summary>
+              <div class="advanced-grid">
+                <div class="control" data-control="pressure_w_no_load_default"></div>
+                <div class="control" data-control="pressure_stall_torque_default"></div>
+                <div class="control" data-control="default_pressure"></div>
+              </div>
+            </details>
+          </div>
+        </section>
       </section>
 
       <aside class="results" aria-label="Calculated output">
@@ -462,9 +521,23 @@
       wheel_mass: { label: "Wheel Mass", value: 0.05, min: 0.005, max: 0.5, step: 0.005, unit: "kg" },
       number_wheels: { label: "Number Of Wheels", value: 4, min: 1, max: 8, step: 1, unit: "" },
       radius: { label: "Wheel Radius", value: 0.025, min: 0.005, max: 0.15, step: 0.001, unit: "m" },
+      reaction_time: { label: "Reaction Time", value: 10, min: 0.1, max: 60, step: 0.1, unit: "s" },
+      volume: { label: "Volume", value: 0.025, min: 0.001, max: 0.1, step: 0.001, unit: "L" },
+      pressure_w_no_load_default: { label: "Default No Load Angular Velocity", value: 157, min: 10, max: 500, step: 1, unit: "rad/s" },
+      pressure_stall_torque_default: { label: "Default Stall Torque", value: 0.04, min: 0.001, max: 0.2, step: 0.001, unit: "N m" },
+      default_pressure: { label: "Default Pressure", value: 20, min: 1, max: 100, step: 1, unit: "" },
       thiosulfate: { label: "Thiosulfate", value: 1, min: 0.1, max: 10, step: 0.1, unit: "" },
       hydrogen_peroxide: { label: "Hydrogen Peroxide", value: 4, min: 0.1, max: 10, step: 0.1, unit: "" },
+      pressure_hydrogen_peroxide: { label: "Hydrogen Peroxide", value: 0.05, min: 0.001, max: 1, step: 0.001, unit: "" },
       iodine: { label: "Iodine", value: 1, min: 0.1, max: 10, step: 0.1, unit: "" },
+      peroxodisulfate: { label: "Peroxodisulfate", value: 1, min: 0.1, max: 10, step: 0.1, unit: "" },
+      ascorbicacid: { label: "Ascorbic Acid", value: 1, min: 0.1, max: 10, step: 0.1, unit: "" },
+      bisulfate: { label: "Bisulfate", value: 1, min: 0.1, max: 10, step: 0.1, unit: "" },
+      iodate: { label: "Iodate", value: 1, min: 0.1, max: 10, step: 0.1, unit: "" },
+      sodium_bicarbonate: { label: "Sodium Bicarbonate", value: 0.05, min: 0.001, max: 1, step: 0.001, unit: "" },
+      calcium_carbonate: { label: "Calcium Carbonate", value: 0.05, min: 0.001, max: 1, step: 0.001, unit: "" },
+      zinc: { label: "Zinc", value: 0.05, min: 0.001, max: 1, step: 0.001, unit: "" },
+      carbon_dioxide: { label: "Carbon Dioxide", value: 0.05, min: 0.001, max: 1, step: 0.001, unit: "" },
       bearing_friction: { label: "Bearing Friction", value: 0.15, min: 0, max: 1, step: 0.01, unit: "" },
       rolling_friction: { label: "Rolling Friction", value: 0.05, min: 0, max: 1, step: 0.01, unit: "" },
       g: { label: "G", value: 9.8, min: 1, max: 20, step: 0.1, unit: "m/s^2" }
@@ -475,8 +548,62 @@
       motorEfficiency: 0.95
     };
 
+    const chemicalReactions = {
+      time_stop_thiosulfate: {
+        label: "Thiosulfate Clock",
+        reactants: ["thiosulfate", "iodine", "hydrogen_peroxide"],
+        calculate: (params) => params.thiosulfate / (0.024 * params.iodine * params.hydrogen_peroxide)
+      },
+      time_stop_peroxodisulfate: {
+        label: "Peroxodisulfate Clock",
+        reactants: ["thiosulfate", "iodine", "peroxodisulfate"],
+        calculate: (params) => params.thiosulfate / (0.040 * params.iodine * params.peroxodisulfate)
+      },
+      time_stop_ascorbicacid: {
+        label: "Ascorbicacid Clock",
+        reactants: ["ascorbicacid", "iodine", "peroxodisulfate"],
+        calculate: (params) => params.ascorbicacid / (0.025 * params.iodine * params.peroxodisulfate)
+      },
+      time_stop_landoltiodine: {
+        label: "Landoltiodine Clock",
+        reactants: ["bisulfate", "iodate"],
+        calculate: (params) => 0.003 / (params.iodate * params.bisulfate)
+      }
+    };
+
+    const pressureReactions = {
+      pressure_release_hydrogen_peroxide: {
+        label: "Hydrogen Peroxide Pressure",
+        reactants: ["pressure_hydrogen_peroxide"],
+        calculatePressure: (params) => 12.23 * params.pressure_hydrogen_peroxide / params.volume
+      },
+      pressure_release_sodium_bicarbonate_acetic_acid: {
+        label: "Sodium Bicarbonate Acetic Acid Pressure",
+        reactants: ["sodium_bicarbonate"],
+        calculatePressure: (params) => 24.47 * params.sodium_bicarbonate / params.volume
+      },
+      pressure_release_calcium_carbonate_hydrochloric_acid: {
+        label: "Calcium Carbonate Hydrochloric Acid Pressure",
+        reactants: ["calcium_carbonate"],
+        calculatePressure: (params) => 24.47 * params.calcium_carbonate / params.volume
+      },
+      pressure_release_zinc_hydrochloric_acid: {
+        label: "Zinc Hydrochloric Acid Pressure",
+        reactants: ["zinc"],
+        calculatePressure: (params) => 24.47 * params.zinc / params.volume
+      },
+      pressure_release_dry_ice: {
+        label: "Dry Ice Pressure",
+        reactants: ["carbon_dioxide"],
+        calculatePressure: (params) => 24.47 * params.carbon_dioxide / params.volume
+      }
+    };
+
     const values = {};
     const controls = {};
+    let selectedMode = "battery";
+    let selectedReaction = "time_stop_thiosulfate";
+    let selectedPressureReaction = "pressure_release_dry_ice";
 
     function formatValue(value, unit = "") {
       const abs = Math.abs(value);
@@ -495,12 +622,14 @@
 
     function renderControl(name, mount) {
       const def = parameterDefs[name];
-      values[name] = def.value;
+      if (!(name in values)) {
+        values[name] = def.value;
+      }
 
       mount.innerHTML = `
         <div class="control-top">
           <label for="${name}">${def.label}</label>
-          <output id="${name}-value" for="${name}">${formatValue(def.value, def.unit)}</output>
+          <output id="${name}-value" for="${name}">${formatValue(values[name], def.unit)}</output>
         </div>
         <input
           type="range"
@@ -508,7 +637,7 @@
           min="${def.min}"
           max="${def.max}"
           step="${def.step}"
-          value="${def.value}"
+          value="${values[name]}"
         >
         <div class="bounds">
           <span>${formatValue(def.min, def.unit)}</span>
@@ -527,17 +656,104 @@
       });
     }
 
-    function timeStop(reactant1, reactant2, reactant3) {
-      return reactant1 / (0.024 * reactant2 * reactant3);
+    function populateReactionSelect() {
+      const select = document.getElementById("reaction-select");
+      select.innerHTML = Object.entries(chemicalReactions)
+        .map(([name, reaction]) => `<option value="${name}">${reaction.label}</option>`)
+        .join("");
+      select.value = selectedReaction;
+      select.addEventListener("change", () => {
+        selectedReaction = select.value;
+        renderChemicalControls();
+        updateResults();
+      });
+    }
+
+    function renderChemicalControls() {
+      const container = document.getElementById("chemical-controls");
+      controls.thiosulfate = undefined;
+      controls.hydrogen_peroxide = undefined;
+      controls.pressure_hydrogen_peroxide = undefined;
+      controls.iodine = undefined;
+      controls.peroxodisulfate = undefined;
+      controls.ascorbicacid = undefined;
+      controls.bisulfate = undefined;
+      controls.iodate = undefined;
+      container.innerHTML = "";
+
+      chemicalReactions[selectedReaction].reactants.forEach((name) => {
+        const mount = document.createElement("div");
+        mount.className = "control";
+        mount.dataset.control = name;
+        container.appendChild(mount);
+        renderControl(name, mount);
+      });
+    }
+
+    function populatePressureReactionSelect() {
+      const select = document.getElementById("pressure-reaction-select");
+      select.innerHTML = Object.entries(pressureReactions)
+        .map(([name, reaction]) => `<option value="${name}">${reaction.label}</option>`)
+        .join("");
+      select.value = selectedPressureReaction;
+      select.addEventListener("change", () => {
+        selectedPressureReaction = select.value;
+        renderPressureControls();
+        updateResults();
+      });
+    }
+
+    function renderPressureControls() {
+      const container = document.getElementById("pressure-controls");
+      controls.volume = undefined;
+      controls.sodium_bicarbonate = undefined;
+      controls.calcium_carbonate = undefined;
+      controls.zinc = undefined;
+      controls.carbon_dioxide = undefined;
+      container.innerHTML = "";
+
+      [
+        ...pressureReactions[selectedPressureReaction].reactants,
+        "volume"
+      ].forEach((name) => {
+        const mount = document.createElement("div");
+        mount.className = "control";
+        mount.dataset.control = name;
+        container.appendChild(mount);
+        renderControl(name, mount);
+      });
+    }
+
+    function timeStop(params) {
+      return chemicalReactions[selectedReaction].calculate(params);
     }
 
     function stallTorqueCalc(v, r, tc) {
       return tc * (v / r);
     }
 
+    function pressureCalc(params) {
+      return pressureReactions[selectedPressureReaction].calculatePressure(params);
+    }
+
+    function wNoLoadCalcPressure(defaultWNoLoad, pressure, defaultPressure) {
+      return defaultWNoLoad * pressure / defaultPressure;
+    }
+
+    function stallTorqueCalcPressure(defaultStallTorque, pressure, defaultPressure) {
+      return defaultStallTorque * pressure / defaultPressure;
+    }
+
     function calculateDistance(params) {
-      const stopTime = timeStop(params.thiosulfate, params.hydrogen_peroxide, params.iodine);
-      const stallTorque = stallTorqueCalc(params.voltage, params.resistance, params.torque_constant);
+      const isPressureMode = selectedMode === "pressure";
+      const stopTime = isPressureMode ? params.reaction_time : timeStop(params);
+      const pressure = isPressureMode ? pressureCalc(params) : null;
+      const stallTorque = isPressureMode
+        ? stallTorqueCalcPressure(params.pressure_stall_torque_default, pressure, params.default_pressure)
+        : stallTorqueCalc(params.voltage, params.resistance, params.torque_constant);
+      const wMax = isPressureMode
+        ? wNoLoadCalcPressure(params.pressure_w_no_load_default, pressure, params.default_pressure)
+        : params.w_max;
       const effectiveStallTorque = stallTorque
         * modelConstants.motorEfficiency
         / params.number_wheels;
@@ -547,7 +763,7 @@
         params.bearing_friction,
         params.rolling_friction,
         modelConstants.k,
-        params.w_max,
+        wMax,
         params.g
       ];
 
@@ -594,7 +810,9 @@
         stopTime,
         stallTorque: effectiveStallTorque,
         angularVelocity,
-        motionPoints
+        motionPoints,
+        pressure,
+        wMax
       };
     }
 
@@ -701,10 +919,58 @@
       renderControl(mount.dataset.control, mount);
     });
 
+    populateReactionSelect();
+    renderChemicalControls();
+    populatePressureReactionSelect();
+    renderPressureControls();
+
+    function setActiveTab(tabName) {
+      document.querySelectorAll("[data-tab]").forEach((button) => {
+        button.classList.toggle("active", button.dataset.tab === tabName);
+      });
+      document.querySelectorAll(".tab-panel").forEach((panel) => {
+        panel.classList.toggle("active", panel.id === tabName);
+      });
+    }
+
+    function updateModeUi() {
+      document.querySelectorAll("[data-mode]").forEach((button) => {
+        button.classList.toggle("active", button.dataset.mode === selectedMode);
+      });
+
+      document.getElementById("parameter-tabs").style.gridTemplateColumns = selectedMode === "pressure"
+        ? "repeat(2, minmax(0, 1fr))"
+        : "repeat(3, minmax(0, 1fr))";
+
+      document.querySelectorAll("[data-modes]").forEach((element) => {
+        const modes = element.dataset.modes.split(" ");
+        element.hidden = !modes.includes(selectedMode);
+      });
+
+      const activePanel = document.querySelector(".tab-panel.active");
+      if (!activePanel || activePanel.id === "motor" && selectedMode === "pressure" || activePanel.id === "chemical" && selectedMode === "pressure" || activePanel.id === "pressure" && selectedMode === "battery") {
+        setActiveTab(selectedMode === "pressure" ? "pressure" : "motor");
+      }
+
+      updateResults();
+    }
+
     document.querySelectorAll(".tab").forEach((tab) => {
       tab.addEventListener("click", () => {
+        if (tab.dataset.mode) {
+          selectedMode = tab.dataset.mode;
+          updateModeUi();
+          return;
+        }
+
+        if (tab.hidden) {
+          return;
+        }
+
         document.querySelectorAll(".tab").forEach((button) => {
-          button.classList.toggle("active", button === tab);
+          if (button.dataset.tab) {
+            button.classList.toggle("active", button === tab);
+          }
         });
         document.querySelectorAll(".tab-panel").forEach((panel) => {
           panel.classList.toggle("active", panel.id === tab.dataset.tab);
@@ -715,15 +981,26 @@
     document.getElementById("reset").addEventListener("click", () => {
       Object.entries(parameterDefs).forEach(([name, def]) => {
         values[name] = def.value;
-        controls[name].input.value = def.value;
-        controls[name].output.textContent = formatValue(def.value, def.unit);
+        if (controls[name]) {
+          controls[name].input.value = def.value;
+          controls[name].output.textContent = formatValue(def.value, def.unit);
+        }
       });
+      selectedReaction = "time_stop_thiosulfate";
+      selectedPressureReaction = "pressure_release_dry_ice";
+      selectedMode = "battery";
+      document.getElementById("reaction-select").value = selectedReaction;
+      document.getElementById("pressure-reaction-select").value = selectedPressureReaction;
+      renderChemicalControls();
+      renderPressureControls();
+      setActiveTab("motor");
+      updateModeUi();
       updateResults();
     });
 
     window.addEventListener("resize", updateResults);
 
-    updateResults();
+    updateModeUi();
   </script>
 </body>
 </html>
