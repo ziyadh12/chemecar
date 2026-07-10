@@ -14,7 +14,6 @@
       --accent: #18756d;
       --accent-strong: #0e514b;
       --warm: #c95d2e;
-      --track: #dde6e2;
       --shadow: 0 18px 50px rgba(24, 38, 34, 0.12);
     }
 
@@ -229,53 +228,19 @@
     }
 
     .distance {
-      margin: 8px 0 20px;
-      font-size: clamp(2.4rem, 6vw, 4.6rem);
-      line-height: 0.95;
+      margin: 8px 0 16px;
+      font-size: clamp(1.55rem, 3.2vw, 2.35rem);
+      line-height: 1;
       color: var(--accent-strong);
       font-weight: 900;
       letter-spacing: 0;
-      overflow-wrap: anywhere;
+      white-space: nowrap;
     }
 
     .metrics {
       display: grid;
       gap: 10px;
-      margin-top: 18px;
-    }
-
-    .track {
-      position: relative;
-      height: 48px;
-      margin: 10px 0 18px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background:
-        repeating-linear-gradient(90deg, transparent 0 42px, rgba(31, 38, 35, 0.10) 42px 44px),
-        linear-gradient(180deg, #f9fbfa, #e6ece9);
-      overflow: hidden;
-    }
-
-    .track-fill {
-      position: absolute;
-      inset: 0 auto 0 0;
-      width: 0%;
-      background: linear-gradient(90deg, rgba(24, 117, 109, 0.18), rgba(201, 93, 46, 0.28));
-      transition: width 160ms ease;
-    }
-
-    .car-dot {
-      position: absolute;
-      top: 50%;
-      left: 0%;
-      width: 24px;
-      height: 24px;
-      border: 4px solid var(--accent-strong);
-      border-radius: 50%;
-      background: var(--warm);
-      transform: translate(-50%, -50%);
-      transition: left 160ms ease;
-      box-shadow: 0 6px 12px rgba(31, 38, 35, 0.18);
+      margin: 0 0 16px;
     }
 
     .metric {
@@ -292,6 +257,64 @@
       color: var(--ink);
       font-variant-numeric: tabular-nums;
       text-align: right;
+    }
+
+    .graph-panel {
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfcfa;
+    }
+
+    .graph-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .graph-title {
+      margin: 0;
+      color: var(--ink);
+      font-size: 0.92rem;
+      font-weight: 800;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px 12px;
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+    }
+
+    .swatch {
+      width: 18px;
+      height: 3px;
+      border-radius: 999px;
+    }
+
+    .swatch.position {
+      background: var(--accent);
+    }
+
+    .swatch.velocity {
+      background: var(--warm);
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 220px;
     }
 
     .reset {
@@ -358,7 +381,7 @@
       <section class="workspace" aria-label="Chem-E-Car model inputs">
         <header>
           <h1>Chem-E-Car Distance Calculator</h1>
-          <p class="subtitle">Distance updates from the same clock reaction, motor torque, drag torque, and wheel integration used in <strong>chemecar.py</strong>.</p>
+          <p class="subtitle">Calculate distance using set design parameters.</p>
         </header>
 
         <nav class="tabs" aria-label="Parameter groups">
@@ -370,7 +393,6 @@
         <section class="tab-panel active" id="motor" aria-label="Motor parameters">
           <div class="control-grid">
             <div class="control" data-control="voltage"></div>
-            <div class="control" data-control="resistance"></div>
             <div class="control" data-control="torque_constant"></div>
             <div class="control" data-control="w_max"></div>
           </div>
@@ -397,6 +419,7 @@
           <details>
             <summary>Advanced Settings</summary>
             <div class="advanced-grid">
+              <div class="control" data-control="resistance"></div>
               <div class="control" data-control="bearing_friction"></div>
               <div class="control" data-control="rolling_friction"></div>
               <div class="control" data-control="g"></div>
@@ -408,23 +431,21 @@
       <aside class="results" aria-label="Calculated output">
         <p class="distance-label">Distance</p>
         <div class="distance"><span id="distance">0.000</span> m</div>
-        <div class="track" aria-hidden="true">
-          <div class="track-fill" id="track-fill"></div>
-          <div class="car-dot" id="car-dot"></div>
-        </div>
         <div class="metrics">
           <div class="metric">
             <span>Clock time</span>
             <strong id="clock-time">0.000 s</strong>
           </div>
-          <div class="metric">
-            <span>Effective stall torque</span>
-            <strong id="stall-torque">0.000 N m</strong>
+        </div>
+        <div class="graph-panel">
+          <div class="graph-head">
+            <p class="graph-title">Motion Over Time</p>
+            <div class="legend" aria-hidden="true">
+              <span class="legend-item"><span class="swatch position"></span>Position</span>
+              <span class="legend-item"><span class="swatch velocity"></span>Linear Velocity</span>
+            </div>
           </div>
-          <div class="metric">
-            <span>Final angular velocity</span>
-            <strong id="angular-velocity">0.000 rad/s</strong>
-          </div>
+          <canvas id="motion-chart" width="560" height="320" aria-label="Position and linear velocity over time"></canvas>
         </div>
         <button class="reset" type="button" id="reset">Reset Defaults</button>
       </aside>
@@ -433,20 +454,20 @@
 
   <script>
     const parameterDefs = {
-      voltage: { label: "voltage", value: 1.5, min: 0.1, max: 12, step: 0.1, unit: "V" },
-      resistance: { label: "resistance", value: 0.0625, min: 0.01, max: 1, step: 0.0025, unit: "ohm" },
-      torque_constant: { label: "torque_constant", value: 0.0025, min: 0.0001, max: 0.02, step: 0.0001, unit: "N m/A" },
-      w_max: { label: "w_max", value: 500, min: 10, max: 500, step: 1, unit: "rad/s" },
-      mass: { label: "mass", value: 2.5, min: 0.1, max: 10, step: 0.1, unit: "kg" },
-      wheel_mass: { label: "wheel_mass", value: 0.05, min: 0.005, max: 0.5, step: 0.005, unit: "kg" },
-      number_wheels: { label: "number_wheels", value: 4, min: 1, max: 8, step: 1, unit: "" },
-      radius: { label: "radius", value: 0.025, min: 0.005, max: 0.15, step: 0.001, unit: "m" },
-      thiosulfate: { label: "thiosulfate", value: 1, min: 0.1, max: 10, step: 0.1, unit: "" },
-      hydrogen_peroxide: { label: "hydrogen peroxide", value: 4, min: 0.1, max: 10, step: 0.1, unit: "" },
-      iodine: { label: "iodine", value: 1, min: 0.1, max: 10, step: 0.1, unit: "" },
-      bearing_friction: { label: "bearing_friction", value: 0.15, min: 0, max: 1, step: 0.01, unit: "" },
-      rolling_friction: { label: "rolling_friction", value: 0.05, min: 0, max: 1, step: 0.01, unit: "" },
-      g: { label: "g", value: 9.8, min: 1, max: 20, step: 0.1, unit: "m/s^2" }
+      voltage: { label: "Voltage", value: 1.5, min: 0.1, max: 12, step: 0.1, unit: "V" },
+      resistance: { label: "Resistance", value: 0.0625, min: 0.01, max: 1, step: 0.0025, unit: "ohm" },
+      torque_constant: { label: "Torque Constant", value: 0.0025, min: 0.0001, max: 0.02, step: 0.0001, unit: "N m/A" },
+      w_max: { label: "No Load Angular Velocity", value: 500, min: 10, max: 500, step: 1, unit: "rad/s" },
+      mass: { label: "Mass", value: 2.5, min: 0.1, max: 10, step: 0.1, unit: "kg" },
+      wheel_mass: { label: "Wheel Mass", value: 0.05, min: 0.005, max: 0.5, step: 0.005, unit: "kg" },
+      number_wheels: { label: "Number Of Wheels", value: 4, min: 1, max: 8, step: 1, unit: "" },
+      radius: { label: "Wheel Radius", value: 0.025, min: 0.005, max: 0.15, step: 0.001, unit: "m" },
+      thiosulfate: { label: "Thiosulfate", value: 1, min: 0.1, max: 10, step: 0.1, unit: "" },
+      hydrogen_peroxide: { label: "Hydrogen Peroxide", value: 4, min: 0.1, max: 10, step: 0.1, unit: "" },
+      iodine: { label: "Iodine", value: 1, min: 0.1, max: 10, step: 0.1, unit: "" },
+      bearing_friction: { label: "Bearing Friction", value: 0.15, min: 0, max: 1, step: 0.01, unit: "" },
+      rolling_friction: { label: "Rolling Friction", value: 0.05, min: 0, max: 1, step: 0.01, unit: "" },
+      g: { label: "G", value: 9.8, min: 1, max: 20, step: 0.1, unit: "m/s^2" }
     };
 
     const modelConstants = {
@@ -534,6 +555,7 @@
       let angularVelocity = 0;
       let position = 0;
       const dt = 30 / 10000;
+      const motionPoints = [{ time: 0, position: 0, linearVelocity: 0 }];
 
       for (let n = 0; n < 10000; n += 1) {
         const friction = (mechanics[0] / params.number_wheels) * mechanics[1] * mechanics[6];
@@ -557,26 +579,122 @@
         angularVelocity = Math.max(0, angularVelocity + angularAcceleration * dt);
         const linearVelocity = angularVelocity * params.radius;
         position += linearVelocity * dt;
+
+        if (n % 50 === 0 || n === 9999) {
+          motionPoints.push({
+            time: (n + 1) * dt,
+            position,
+            linearVelocity
+          });
+        }
       }
 
       return {
         position,
         stopTime,
         stallTorque: effectiveStallTorque,
-        angularVelocity
+        angularVelocity,
+        motionPoints
       };
+    }
+
+    function drawMotionChart(result) {
+      const canvas = document.getElementById("motion-chart");
+      const ctx = canvas.getContext("2d");
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const width = Math.max(1, rect.width);
+      const height = Math.max(1, rect.height);
+      const scaledWidth = Math.round(width * dpr);
+      const scaledHeight = Math.round(height * dpr);
+
+      if (canvas.width !== scaledWidth || canvas.height !== scaledHeight) {
+        canvas.width = scaledWidth;
+        canvas.height = scaledHeight;
+      }
+
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, width, height);
+
+      const padding = {
+        top: 16,
+        right: 12,
+        bottom: 30,
+        left: 38
+      };
+      const plotWidth = width - padding.left - padding.right;
+      const plotHeight = height - padding.top - padding.bottom;
+      const points = result.motionPoints;
+      const maxTime = 30;
+      const maxPosition = Math.max(0.001, ...points.map((point) => point.position));
+      const maxVelocity = Math.max(0.001, ...points.map((point) => point.linearVelocity));
+
+      function xFor(timeValue) {
+        return padding.left + (timeValue / maxTime) * plotWidth;
+      }
+
+      function yFor(value, maxValue) {
+        return padding.top + plotHeight - (value / maxValue) * plotHeight;
+      }
+
+      ctx.strokeStyle = "#d9ded8";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let i = 0; i <= 4; i += 1) {
+        const y = padding.top + (plotHeight / 4) * i;
+        ctx.moveTo(padding.left, y);
+        ctx.lineTo(width - padding.right, y);
+      }
+      for (let i = 0; i <= 3; i += 1) {
+        const x = padding.left + (plotWidth / 3) * i;
+        ctx.moveTo(x, padding.top);
+        ctx.lineTo(x, height - padding.bottom);
+      }
+      ctx.stroke();
+
+      ctx.strokeStyle = "#64706b";
+      ctx.beginPath();
+      ctx.moveTo(padding.left, padding.top);
+      ctx.lineTo(padding.left, height - padding.bottom);
+      ctx.lineTo(width - padding.right, height - padding.bottom);
+      ctx.stroke();
+
+      function drawLine(color, key, maxValue) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        points.forEach((point, index) => {
+          const x = xFor(point.time);
+          const y = yFor(point[key], maxValue);
+          if (index === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
+        });
+        ctx.stroke();
+      }
+
+      drawLine("#18756d", "position", maxPosition);
+      drawLine("#c95d2e", "linearVelocity", maxVelocity);
+
+      ctx.fillStyle = "#64706b";
+      ctx.font = "11px Arial, Helvetica, sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText("0 s", padding.left, height - 10);
+      ctx.textAlign = "right";
+      ctx.fillText("30 s", width - padding.right, height - 10);
+      ctx.textAlign = "left";
+      ctx.fillText(`${maxPosition.toFixed(2)} m`, padding.left, 12);
+      ctx.textAlign = "right";
+      ctx.fillText(`${maxVelocity.toFixed(2)} m/s`, width - padding.right, 12);
     }
 
     function updateResults() {
       const result = calculateDistance(values);
       document.getElementById("distance").textContent = result.position.toFixed(3);
       document.getElementById("clock-time").textContent = `${result.stopTime.toFixed(3)} s`;
-      document.getElementById("stall-torque").textContent = `${result.stallTorque.toFixed(5)} N m`;
-      document.getElementById("angular-velocity").textContent = `${result.angularVelocity.toFixed(3)} rad/s`;
-
-      const trackPercent = Math.max(0, Math.min(100, (result.position / 30) * 100));
-      document.getElementById("track-fill").style.width = `${trackPercent}%`;
-      document.getElementById("car-dot").style.left = `${trackPercent}%`;
+      drawMotionChart(result);
     }
 
     document.querySelectorAll("[data-control]").forEach((mount) => {
@@ -602,6 +720,8 @@
       });
       updateResults();
     });
+
+    window.addEventListener("resize", updateResults);
 
     updateResults();
   </script>
