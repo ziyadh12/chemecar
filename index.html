@@ -63,6 +63,29 @@
       border-bottom: 1px solid var(--line);
     }
 
+    .workspace-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: flex-start;
+    }
+
+    .top-link {
+      min-height: 40px;
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      background: var(--accent);
+      color: white;
+      font: 800 0.9rem/1 Arial, Helvetica, sans-serif;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 14px;
+      white-space: nowrap;
+    }
+
     h1 {
       margin: 0;
       font-size: clamp(1.8rem, 3vw, 3rem);
@@ -377,6 +400,10 @@
         padding-right: 16px;
       }
 
+      .workspace-head {
+        display: grid;
+      }
+
       .tabs,
       .control-grid,
       .advanced-grid {
@@ -399,9 +426,12 @@
   <main>
     <div class="app">
       <section class="workspace" aria-label="Chem-E-Car model inputs">
-        <header>
-          <h1>Chem-E-Car Distance Calculator</h1>
-          <p class="subtitle">Calculate distance using set design parameters.</p>
+        <header class="workspace-head">
+          <div>
+            <h1>Chem-E-Car Distance Calculator</h1>
+            <p class="subtitle">Calculate distance using set design parameters.</p>
+          </div>
+          <a class="top-link" href="http://127.0.0.1:5000/builds.html">Builds</a>
         </header>
 
         <nav class="tabs mode-tabs" aria-label="Reaction type">
@@ -605,6 +635,43 @@
     let selectedReaction = "time_stop_thiosulfate";
     let selectedPressureReaction = "pressure_release_dry_ice";
 
+    function loadBuildFromStorage() {
+      const loadedBuild = localStorage.getItem("chemecarLoadedBuild");
+      const currentBuild = localStorage.getItem("chemecarCurrentBuild");
+      const saved = loadedBuild || currentBuild;
+      if (!saved) {
+        return;
+      }
+
+      const build = JSON.parse(saved);
+      Object.entries(build).forEach(([name, value]) => {
+        if (name in parameterDefs && value !== null) {
+          values[name] = Number(value);
+        }
+      });
+
+      selectedMode = build.selected_mode || selectedMode;
+      selectedReaction = build.selected_reaction || selectedReaction;
+      selectedPressureReaction = build.selected_pressure_reaction || selectedPressureReaction;
+      if (loadedBuild) {
+        localStorage.removeItem("chemecarLoadedBuild");
+      }
+    }
+
+    function saveCurrentBuildToStorage(result) {
+      localStorage.setItem("chemecarCurrentBuild", JSON.stringify({
+        ...values,
+        selected_mode: selectedMode,
+        selected_reaction: selectedReaction,
+        selected_reaction_label: chemicalReactions[selectedReaction].label,
+        selected_pressure_reaction: selectedPressureReaction,
+        selected_pressure_reaction_label: pressureReactions[selectedPressureReaction].label,
+        stop_time: result.stopTime,
+        distance: result.position,
+        motion_points_json: JSON.stringify(result.motionPoints)
+      }));
+    }
+
     function formatValue(value, unit = "") {
       const abs = Math.abs(value);
       let shown;
@@ -790,7 +857,7 @@
           netTorque = 0;
         }
 
-        time += 0.01;
+        time += dt;
         const angularAcceleration = netTorque / momentOfInertia;
         angularVelocity = Math.max(0, angularVelocity + angularAcceleration * dt);
         const linearVelocity = angularVelocity * params.radius;
@@ -913,7 +980,10 @@
       document.getElementById("distance").textContent = result.position.toFixed(3);
       document.getElementById("clock-time").textContent = `${result.stopTime.toFixed(3)} s`;
       drawMotionChart(result);
+      saveCurrentBuildToStorage(result);
     }
+
+    loadBuildFromStorage();
 
     document.querySelectorAll("[data-control]").forEach((mount) => {
       renderControl(mount.dataset.control, mount);

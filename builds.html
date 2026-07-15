@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chem-E-Car Builds</title>
+  <style>
+    :root {
+      --bg: #f6f7f2;
+      --panel: #ffffff;
+      --ink: #1f2623;
+      --muted: #64706b;
+      --line: #d9ded8;
+      --accent: #18756d;
+      --accent-strong: #0e514b;
+      --warm: #c95d2e;
+      --shadow: 0 18px 50px rgba(24, 38, 34, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        linear-gradient(135deg, rgba(24, 117, 109, 0.12), transparent 34%),
+        linear-gradient(315deg, rgba(201, 93, 46, 0.10), transparent 30%),
+        var(--bg);
+      color: var(--ink);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    main {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 30px 0;
+    }
+
+    header,
+    .panel,
+    .build-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: flex-start;
+      padding: 24px;
+      margin-bottom: 22px;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin-top: 0;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+      font-size: clamp(1.8rem, 3vw, 3rem);
+      line-height: 1.02;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      margin-bottom: 14px;
+      font-size: 1.1rem;
+    }
+
+    h3 {
+      margin-bottom: 8px;
+      font-size: 1rem;
+    }
+
+    .subtitle,
+    .hint,
+    .status,
+    .build-meta,
+    .summary-label {
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .top-link,
+    button {
+      min-height: 40px;
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      background: var(--accent);
+      color: white;
+      font: 800 0.9rem/1 Arial, Helvetica, sans-serif;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 14px;
+      white-space: nowrap;
+    }
+
+    .secondary {
+      background: white;
+      color: var(--accent-strong);
+    }
+
+    .danger {
+      border-color: #b93d2f;
+      background: #b93d2f;
+      color: white;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 340px minmax(0, 1fr);
+      gap: 22px;
+      align-items: start;
+    }
+
+    .panel {
+      padding: 22px;
+    }
+
+    .auth-actions,
+    .save-actions,
+    .build-card-head {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    label {
+      display: grid;
+      gap: 6px;
+      margin-bottom: 12px;
+      color: var(--ink);
+      font-weight: 700;
+    }
+
+    input {
+      width: 100%;
+      min-height: 40px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--ink);
+      font: 700 0.92rem/1 Arial, Helvetica, sans-serif;
+      padding: 0 10px;
+      background: white;
+    }
+
+    .status {
+      min-height: 22px;
+      margin: 12px 0 0;
+      font-size: 0.92rem;
+    }
+
+    .current-build {
+      display: grid;
+      gap: 18px;
+    }
+
+    .build-manager-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .save-actions {
+      justify-content: flex-start;
+      margin: 0 0 18px;
+    }
+
+    .save-actions input {
+      width: min(260px, 100%);
+    }
+
+    .build-selector {
+      display: flex;
+      max-width: 520px;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 6px;
+    }
+
+    .selector-button {
+      flex: 0 0 auto;
+      background: white;
+      color: var(--accent-strong);
+      max-width: 190px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .selector-button.active {
+      background: var(--accent);
+      color: white;
+    }
+
+    .saved-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .summary-item {
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfcfa;
+    }
+
+    .summary-label {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .summary-value {
+      color: var(--ink);
+      font-size: 1rem;
+      font-weight: 900;
+      overflow-wrap: anywhere;
+    }
+
+    .chart-grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .chart-panel {
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfcfa;
+    }
+
+    .chart-title {
+      margin-bottom: 10px;
+      color: var(--ink);
+      font-size: 0.92rem;
+      font-weight: 800;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 280px;
+    }
+
+    .saved-build {
+      margin-top: 22px;
+    }
+
+    .build-card {
+      padding: 18px;
+      box-shadow: none;
+    }
+
+    .build-card .chart-grid {
+      margin-top: 14px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .build-card canvas {
+      height: 220px;
+    }
+
+    @media (max-width: 900px) {
+      main {
+        width: min(100% - 20px, 680px);
+        padding: 10px 0;
+      }
+
+      header,
+      .layout,
+      .build-manager-head,
+      .summary-grid,
+      .build-card .chart-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+      .build-selector {
+        max-width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>Saved Builds</h1>
+        <p class="subtitle">Save the current calculator output and reopen previous Chem-E-Car builds.</p>
+      </div>
+      <a class="top-link" href="http://127.0.0.1:5000/index.html">Calculator</a>
+    </header>
+
+    <div class="layout">
+      <aside class="panel" aria-label="Account">
+        <h2>Account</h2>
+        <form id="auth-form">
+          <label>
+            Username
+            <input id="username" name="username" autocomplete="username" required>
+          </label>
+          <label>
+            Password
+            <input id="password" name="password" type="password" autocomplete="current-password" required>
+          </label>
+          <div class="auth-actions">
+            <button type="submit" data-action="signup">Sign Up</button>
+            <button class="secondary" type="submit" data-action="login">Log In</button>
+            <button class="secondary" type="button" id="logout">Log Out</button>
+          </div>
+        </form>
+        <p class="status" id="auth-status">Not logged in.</p>
+      </aside>
+
+      <section class="panel" aria-label="Build manager">
+        <div class="build-manager-head">
+          <h2>Current Calculator Build</h2>
+          <div class="build-selector" id="build-selector" aria-label="Saved build selector"></div>
+        </div>
+
+        <div class="save-actions">
+          <input id="build-name" value="My Chem-E-Car Build" aria-label="Build name">
+          <button type="button" id="save-current">Save Current Build</button>
+        </div>
+
+        <div class="current-build">
+          <div class="summary-grid" id="current-summary"></div>
+          <div class="chart-grid">
+            <div class="chart-panel">
+              <p class="chart-title">Distance Until Stop Time</p>
+              <canvas id="current-distance-chart"></canvas>
+            </div>
+            <div class="chart-panel">
+              <p class="chart-title">Velocity Until Stop Time</p>
+              <canvas id="current-velocity-chart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <p class="status" id="build-status">Log in to save and view builds.</p>
+        <div class="saved-build" id="saved-build"></div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const apiBase = "http://127.0.0.1:5000";
+    const authForm = document.getElementById("auth-form");
+    const authStatus = document.getElementById("auth-status");
+    const buildStatus = document.getElementById("build-status");
+    const buildSelector = document.getElementById("build-selector");
+    const savedBuild = document.getElementById("saved-build");
+    const currentSummary = document.getElementById("current-summary");
+    const buildName = document.getElementById("build-name");
+    let savedBuildsById = new Map();
+    let selectedBuildId = null;
+    const reactionLabels = {
+      time_stop_thiosulfate: "Thiosulfate Clock",
+      time_stop_peroxodisulfate: "Peroxodisulfate Clock",
+      time_stop_ascorbicacid: "Ascorbicacid Clock",
+      time_stop_landoltiodine: "Landoltiodine Clock"
+    };
+    const pressureReactionLabels = {
+      pressure_release_hydrogen_peroxide: "Hydrogen Peroxide Pressure",
+      pressure_release_sodium_bicarbonate_acetic_acid: "Sodium Bicarbonate Acetic Acid Pressure",
+      pressure_release_calcium_carbonate_hydrochloric_acid: "Calcium Carbonate Hydrochloric Acid Pressure",
+      pressure_release_zinc_hydrochloric_acid: "Zinc Hydrochloric Acid Pressure",
+      pressure_release_dry_ice: "Dry Ice Pressure"
+    };
+
+    function setStatus(element, message) {
+      element.textContent = message;
+    }
+
+    function getCurrentBuild() {
+      const saved = localStorage.getItem("chemecarCurrentBuild");
+      return saved ? JSON.parse(saved) : null;
+    }
+
+    function reactionText(build) {
+      if (build.selected_mode === "pressure") {
+        return build.selected_pressure_reaction_label
+          || pressureReactionLabels[build.selected_pressure_reaction]
+          || build.selected_pressure_reaction
+          || "Pressure Reaction";
+      }
+      return build.selected_reaction_label
+        || reactionLabels[build.selected_reaction]
+        || build.selected_reaction
+        || "Chemical Reaction";
+    }
+
+    function modeText(build) {
+      return build.selected_mode === "pressure" ? "Pressure" : "Motor";
+    }
+
+    function summaryItems(build) {
+      return [
+        ["Mode", modeText(build)],
+        [build.selected_mode === "pressure" ? "Pressure Reaction" : "Chemical Reaction", reactionText(build)],
+        ["Stopping Time", `${Number(build.stop_time || 0).toFixed(3)} s`],
+        ["Distance", `${Number(build.distance || 0).toFixed(3)} m`]
+      ];
+    }
+
+    function renderSummary(container, build) {
+      container.innerHTML = summaryItems(build).map(([label, value]) => `
+        <div class="summary-item">
+          <span class="summary-label">${label}</span>
+          <span class="summary-value">${value}</span>
+        </div>
+      `).join("");
+    }
+
+    function pointsFor(build) {
+      if (!build.motion_points_json) {
+        return [];
+      }
+
+      try {
+        return JSON.parse(build.motion_points_json);
+      } catch {
+        return [];
+      }
+    }
+
+    function drawChart(canvas, build, key, color, unit) {
+      const ctx = canvas.getContext("2d");
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const width = Math.max(1, rect.width);
+      const height = Math.max(1, rect.height);
+      canvas.width = Math.round(width * dpr);
+      canvas.height = Math.round(height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, width, height);
+
+      const stopTime = Math.max(0.001, Number(build.stop_time || 0));
+      const points = pointsFor(build).filter((point) => point.time <= stopTime);
+      if (points.length < 2) {
+        ctx.fillStyle = "#64706b";
+        ctx.font = "700 13px Arial, Helvetica, sans-serif";
+        ctx.fillText("No graph data saved.", 16, 28);
+        return;
+      }
+
+      const padding = { top: 20, right: 18, bottom: 34, left: 48 };
+      const plotWidth = width - padding.left - padding.right;
+      const plotHeight = height - padding.top - padding.bottom;
+      const maxValue = Math.max(0.001, ...points.map((point) => Number(point[key] || 0)));
+
+      function xFor(time) {
+        return padding.left + (time / stopTime) * plotWidth;
+      }
+
+      function yFor(value) {
+        return padding.top + plotHeight - (value / maxValue) * plotHeight;
+      }
+
+      ctx.strokeStyle = "#d9ded8";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let i = 0; i <= 4; i += 1) {
+        const y = padding.top + (plotHeight / 4) * i;
+        ctx.moveTo(padding.left, y);
+        ctx.lineTo(width - padding.right, y);
+      }
+      for (let i = 0; i <= 4; i += 1) {
+        const x = padding.left + (plotWidth / 4) * i;
+        ctx.moveTo(x, padding.top);
+        ctx.lineTo(x, height - padding.bottom);
+      }
+      ctx.stroke();
+
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      points.forEach((point, index) => {
+        const x = xFor(Number(point.time || 0));
+        const y = yFor(Number(point[key] || 0));
+        if (index === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+      });
+      ctx.stroke();
+
+      ctx.fillStyle = "#64706b";
+      ctx.font = "700 12px Arial, Helvetica, sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText("0 s", padding.left, height - 10);
+      ctx.textAlign = "right";
+      ctx.fillText(`${stopTime.toFixed(2)} s`, width - padding.right, height - 10);
+      ctx.textAlign = "left";
+      ctx.fillText(`${maxValue.toFixed(2)} ${unit}`, padding.left, 14);
+    }
+
+    function renderCurrentBuild() {
+      const build = getCurrentBuild();
+      if (!build) {
+        currentSummary.innerHTML = "<p class=\"hint\">Visit the calculator first so this page can save its current values.</p>";
+        drawChart(document.getElementById("current-distance-chart"), {}, "position", "#18756d", "m");
+        drawChart(document.getElementById("current-velocity-chart"), {}, "linearVelocity", "#c95d2e", "m/s");
+        return null;
+      }
+
+      renderSummary(currentSummary, build);
+      drawChart(document.getElementById("current-distance-chart"), build, "position", "#18756d", "m");
+      drawChart(document.getElementById("current-velocity-chart"), build, "linearVelocity", "#c95d2e", "m/s");
+      return build;
+    }
+
+    function renderBuilds(builds) {
+      savedBuildsById = new Map(builds.map((build) => [String(build.id), build]));
+      if (!builds.length) {
+        selectedBuildId = null;
+        buildSelector.innerHTML = "<p class=\"hint\">No saved builds yet.</p>";
+        savedBuild.innerHTML = "";
+        return;
+      }
+
+      if (!selectedBuildId || !savedBuildsById.has(String(selectedBuildId))) {
+        selectedBuildId = String(builds[0].id);
+      }
+
+      buildSelector.innerHTML = builds.map((build) => `
+        <button
+          class="selector-button ${String(build.id) === String(selectedBuildId) ? "active" : ""}"
+          type="button"
+          data-select="${build.id}"
+          title="${build.name}"
+        >${build.name}</button>
+      `).join("");
+
+      renderSelectedBuild();
+    }
+
+    function renderSelectedBuild() {
+      const build = savedBuildsById.get(String(selectedBuildId));
+      if (!build) {
+        savedBuild.innerHTML = "";
+        return;
+      }
+
+      savedBuild.innerHTML = `
+        <article class="build-card">
+          <div class="build-card-head">
+            <div>
+              <h3>${build.name}</h3>
+              <div class="build-meta">${build.created_at}</div>
+            </div>
+            <div class="saved-actions">
+              <button class="secondary" type="button" data-load="${build.id}">Load In Calculator</button>
+              <button class="danger" type="button" data-delete="${build.id}">Delete Build</button>
+            </div>
+          </div>
+          <div class="summary-grid" id="selected-summary"></div>
+          <div class="chart-grid">
+            <div class="chart-panel">
+              <p class="chart-title">Distance Until Stop Time</p>
+              <canvas id="selected-distance"></canvas>
+            </div>
+            <div class="chart-panel">
+              <p class="chart-title">Velocity Until Stop Time</p>
+              <canvas id="selected-velocity"></canvas>
+            </div>
+          </div>
+        </article>
+      `;
+
+      renderSummary(document.getElementById("selected-summary"), build);
+      drawChart(document.getElementById("selected-distance"), build, "position", "#18756d", "m");
+      drawChart(document.getElementById("selected-velocity"), build, "linearVelocity", "#c95d2e", "m/s");
+    }
+
+    async function loadUserAndBuilds() {
+      const meResponse = await fetch(`${apiBase}/api/me`, { credentials: "include" });
+      const me = await meResponse.json();
+      if (!me.user) {
+        setStatus(authStatus, "Not logged in.");
+        setStatus(buildStatus, "Log in to save and view builds.");
+        buildSelector.innerHTML = "";
+        savedBuild.innerHTML = "";
+        return;
+      }
+
+      setStatus(authStatus, `Logged in as ${me.user.username}.`);
+      const buildsResponse = await fetch(`${apiBase}/api/builds`, { credentials: "include" });
+      const data = await buildsResponse.json();
+      renderBuilds(data.builds || []);
+      setStatus(buildStatus, "Ready to save the current calculator build.");
+    }
+
+    authForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const submitter = event.submitter;
+      const action = submitter ? submitter.dataset.action : "login";
+      const response = await fetch(`${apiBase}/${action}`, {
+        method: "POST",
+        credentials: "include",
+        body: new FormData(authForm)
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        setStatus(authStatus, data.error || "Account request failed.");
+        return;
+      }
+
+      setStatus(authStatus, `Logged in as ${data.user.username}.`);
+      await loadUserAndBuilds();
+    });
+
+    document.getElementById("logout").addEventListener("click", async () => {
+      await fetch(`${apiBase}/logout`, {
+        method: "POST",
+        credentials: "include"
+      });
+      await loadUserAndBuilds();
+    });
+
+    document.getElementById("save-current").addEventListener("click", async () => {
+      const build = renderCurrentBuild();
+      if (!build) {
+        setStatus(buildStatus, "Open the calculator first, then come back to save its current build.");
+        return;
+      }
+
+      const response = await fetch(`${apiBase}/api/builds`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...build,
+          name: buildName.value || "Untitled Build"
+        })
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        setStatus(buildStatus, data.error || "Could not save build.");
+        return;
+      }
+
+      setStatus(buildStatus, "Current calculator build saved.");
+      renderBuilds(data.builds || []);
+    });
+
+    buildSelector.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-select]");
+      if (!button) {
+        return;
+      }
+
+      selectedBuildId = button.dataset.select;
+      buildSelector.querySelectorAll(".selector-button").forEach((selectorButton) => {
+        selectorButton.classList.toggle("active", selectorButton === button);
+      });
+      renderSelectedBuild();
+    });
+
+    savedBuild.addEventListener("click", async (event) => {
+      const loadButton = event.target.closest("[data-load]");
+      const deleteButton = event.target.closest("[data-delete]");
+
+      if (loadButton) {
+        const build = savedBuildsById.get(loadButton.dataset.load);
+        localStorage.setItem("chemecarLoadedBuild", JSON.stringify(build));
+        setStatus(buildStatus, "Build prepared for the calculator.");
+        window.location.href = "http://127.0.0.1:5000/index.html";
+        return;
+      }
+
+      if (deleteButton) {
+        const response = await fetch(`${apiBase}/api/builds/${deleteButton.dataset.delete}`, {
+          method: "DELETE",
+          credentials: "include"
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+          setStatus(buildStatus, data.error || "Could not delete build.");
+          return;
+        }
+
+        selectedBuildId = null;
+        setStatus(buildStatus, "Build deleted.");
+        renderBuilds(data.builds || []);
+      }
+    });
+
+    renderCurrentBuild();
+    loadUserAndBuilds().catch(() => {
+      setStatus(authStatus, "Start Flask with python login.py, then open http://127.0.0.1:5000/builds.html.");
+      setStatus(buildStatus, "The builds page cannot reach the Flask backend yet.");
+    });
+  </script>
+</body>
+</html>
