@@ -352,11 +352,11 @@
           <div class="summary-grid" id="current-summary"></div>
           <div class="chart-grid">
             <div class="chart-panel">
-              <p class="chart-title">Distance Until Stop Time</p>
+              <p class="chart-title">Distance Until 300 Seconds</p>
               <canvas id="current-distance-chart"></canvas>
             </div>
             <div class="chart-panel">
-              <p class="chart-title">Velocity Until Stop Time</p>
+              <p class="chart-title">Velocity Until 300 Seconds</p>
               <canvas id="current-velocity-chart"></canvas>
             </div>
           </div>
@@ -460,8 +460,8 @@
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, width, height);
 
-      const stopTime = Math.max(0.001, Number(build.stop_time || 0));
-      const points = pointsFor(build).filter((point) => point.time <= stopTime);
+      const chartEndTime = 300;
+      const points = pointsFor(build).filter((point) => point.time <= chartEndTime);
       if (points.length < 2) {
         ctx.fillStyle = "#64706b";
         ctx.font = "700 13px Arial, Helvetica, sans-serif";
@@ -475,7 +475,7 @@
       const maxValue = Math.max(0.001, ...points.map((point) => Number(point[key] || 0)));
 
       function xFor(time) {
-        return padding.left + (time / stopTime) * plotWidth;
+        return padding.left + (time / chartEndTime) * plotWidth;
       }
 
       function yFor(value) {
@@ -516,7 +516,7 @@
       ctx.textAlign = "left";
       ctx.fillText("0 s", padding.left, height - 10);
       ctx.textAlign = "right";
-      ctx.fillText(`${stopTime.toFixed(2)} s`, width - padding.right, height - 10);
+      ctx.fillText(`${chartEndTime.toFixed(2)} s`, width - padding.right, height - 10);
       ctx.textAlign = "left";
       ctx.fillText(`${maxValue.toFixed(2)} ${unit}`, padding.left, 14);
     }
@@ -583,11 +583,11 @@
           <div class="summary-grid" id="selected-summary"></div>
           <div class="chart-grid">
             <div class="chart-panel">
-              <p class="chart-title">Distance Until Stop Time</p>
+              <p class="chart-title">Distance Until 300 Seconds</p>
               <canvas id="selected-distance"></canvas>
             </div>
             <div class="chart-panel">
-              <p class="chart-title">Velocity Until Stop Time</p>
+              <p class="chart-title">Velocity Until 300 Seconds</p>
               <canvas id="selected-velocity"></canvas>
             </div>
           </div>
