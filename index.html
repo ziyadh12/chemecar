@@ -547,10 +547,10 @@
       resistance: { label: "Resistance", value: 1.2, min: 1, max: 2, step: 0.1, unit: "ohm" },
       torque_constant: { label: "Torque Constant", value: 0.0060, min: 0.002, max: 0.01, step: 0.001, unit: "N m/A" },
       w_max: { label: "No Load Angular Velocity", value: 1000, min: 400, max: 2000, step: 100, unit: "rad/s" },
-      mass: { label: "Mass", value: 2.5, min: 0.1, max: 10, step: 0.1, unit: "kg" },
+      mass: { label: "Mass", value: 2.5, min: 0.1, max: 10, step: 0.05, unit: "kg" },
       wheel_mass: { label: "Wheel Mass", value: 0.05, min: 0.005, max: 0.5, step: 0.005, unit: "kg" },
       number_wheels: { label: "Number Of Wheels", value: 4, min: 1, max: 8, step: 1, unit: "" },
-      radius: { label: "Wheel Radius", value: 0.025, min: 0.005, max: 0.15, step: 0.001, unit: "m" },
+      radius: { label: "Wheel Radius", value: 0.025, min: 0.005, max: 0.15, step: 0.0005, unit: "m" },
       reaction_time: { label: "Reaction Time", value: 10, min: 0.1, max: 60, step: 0.1, unit: "s" },
       volume: { label: "Volume", value: 0.025, min: 0.001, max: 0.1, step: 0.001, unit: "L" },
       pressure_w_no_load_default: { label: "Default No Load Angular Velocity", value: 157, min: 10, max: 500, step: 1, unit: "rad/s" },
@@ -837,12 +837,12 @@
       let time = 0;
       let angularVelocity = 0;
       let position = 0;
-      const dt = stopTime / 10000;
+      const dt = 300 / 10000;
       const motionPoints = [{ time: 0, position: 0, linearVelocity: 0 }];
 
       for (let n = 0; n < 10000; n += 1) {
         const friction = (mechanics[0] / params.number_wheels) * mechanics[1] * mechanics[6];
-        const momentOfInertia = params.wheel_mass * Math.pow(params.radius, 2);
+        const momentOfInertia = params.wheel_mass * Math.pow(params.radius, 2) + (mechanics[0] / params.number_wheels) * Math.pow(params.radius, 2);
         let netTorque;
 
         if (time < stopTime) {
@@ -910,7 +910,7 @@
       const plotWidth = width - padding.left - padding.right;
       const plotHeight = height - padding.top - padding.bottom;
       const points = result.motionPoints;
-      const maxTime = 30;
+      const maxTime = 300;
       const maxPosition = Math.max(0.001, ...points.map((point) => point.position));
       const maxVelocity = Math.max(0.001, ...points.map((point) => point.linearVelocity));
 
@@ -968,7 +968,7 @@
       ctx.textAlign = "left";
       ctx.fillText("0 s", padding.left, height - 10);
       ctx.textAlign = "right";
-      ctx.fillText("30 s", width - padding.right, height - 10);
+      ctx.fillText("300s", width - padding.right, height - 10);
       ctx.textAlign = "left";
       ctx.fillText(`${maxPosition.toFixed(2)} m`, padding.left, 12);
       ctx.textAlign = "right";
